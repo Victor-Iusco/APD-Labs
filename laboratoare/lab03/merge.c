@@ -110,11 +110,40 @@ void print()
 
 void *thread_function(void *arg)
 {
-	int thread_id = *(int *)arg;
+	 int thread_id = *(int *)arg;
 
-	// implementati aici merge sort paralel
+    // Merge sort paralel implementat
+    int width, *aux;
 
-	pthread_exit(NULL);
+    for (width = 1; width < N; width = 2 * width) {
+        // Fiecare thread lucrează pe porțiunile sale
+        for (int i = thread_id * 2 * width; i < N; i += P * 2 * width) {
+            int start = i;
+            int mid = i + width;
+            int end = i + 2 * width;
+
+            // Verificăm limitele
+            if (mid >= N) break;
+            if (end > N) end = N;
+
+            merge(v, start, mid, end, vNew);
+        }
+
+        // Sincronizăm thread-urile înainte de schimbarea pointerilor
+        pthread_barrier_wait(&barrier);
+
+        // Un singur thread face schimbarea pointerilor
+        if (thread_id == 0) {
+            aux = v;
+            v = vNew;
+            vNew = aux;
+        }
+
+        // Sincronizăm din nou după schimbarea pointerilor
+        pthread_barrier_wait(&barrier);
+    }
+
+    pthread_exit(NULL);
 }
 
 int main(int argc, char *argv[])
